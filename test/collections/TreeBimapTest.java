@@ -283,6 +283,9 @@ public class TreeBimapTest {
                         forward.check("forward 8##");
                         backward.check("backward 8##");
                     }
+
+                    backward.clear();
+                    forward.check("forward 8#clear");
                 }
         );
     }
