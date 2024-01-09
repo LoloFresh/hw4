@@ -119,12 +119,12 @@ public class BimapChecker implements Bimap {
     }
 
     @Override
-    public Map<String, String> left() {
+    public MapChecker left() {
         return new MapChecker(expected.left(), actual.left()).invariantChecker(() -> assertEqualsOrdered(expectedAndActual() + " are not equal after operation with left()"));
     }
 
     @Override
-    public Map<String, String> right() {
+    public MapChecker right() {
         return new MapChecker(expected.right(), actual.right()).invariantChecker(() -> assertEqualsOrdered(expectedAndActual() + " are not equal after operation with right()"));
     }
 }

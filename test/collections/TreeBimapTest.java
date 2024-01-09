@@ -182,4 +182,108 @@ public class TreeBimapTest {
                 }
         );
     }
+
+    @Test
+    public void test07_ViewsSimple() {
+        testCorrectness(
+                new SimpleBimap(),
+                new TreeBimap(),
+                b -> {
+                    final MapChecker forward = b.left();
+                    final MapChecker backward = b.right();
+
+                    b.put("hello", "world");
+                    forward.check("forward 7#1");
+                    backward.check("backward 7#1");
+
+                    b.leftRemove("hello");
+                    forward.check("forward 7#2");
+                    backward.check("backward 7#2");
+
+                    b.put("hello", "cruel");
+                    b.put("cruel", "world");
+                    b.put("world", "hello");
+                    forward.remove("hello");
+                    backward.remove("hello");
+                    forward.check("forward 7#3");
+                }
+        );
+    }
+
+    @Test
+    public void test08_ViewsRandomized() {
+        testCorrectness(
+                new SimpleBimap(Comparator.reverseOrder(), Comparator.naturalOrder()),
+                new TreeBimap(Comparator.reverseOrder(), Comparator.naturalOrder()),
+                b -> {
+                    final MapChecker forward = b.left();
+                    final MapChecker backward = b.right();
+
+                    final SimpleBimap data = new SimpleBimap(LinkedHashMap::new);
+
+                    for (int i = 0; i < 500; i++) {
+                        final String str1 = random.ints(random.nextInt(50, 100), ' ', 0xFFFF)
+                                .collect(
+                                        StringBuilder::new,
+                                        StringBuilder::appendCodePoint,
+                                        StringBuilder::append
+                                ).toString();
+                        final String str2 = random.ints(random.nextInt(50, 100), ' ', 0xFFFF)
+                                .collect(
+                                        StringBuilder::new,
+                                        StringBuilder::appendCodePoint,
+                                        StringBuilder::append
+                                ).toString();
+                        data.put(str1, str2);
+                    }
+                    b.putAll(data);
+
+                    final List<Map.Entry<String, String>> data1 = new ArrayList<>(data.left().entrySet());
+                    Collections.shuffle(data1, random);
+
+                    for (final Map.Entry<String, String> entry : data1) {
+                        final int choice = random.nextInt(0, 7);
+                        if (choice == 0) {
+                            forward.remove(entry.getKey());
+                        } else if (choice == 1) {
+                            backward.remove(entry.getValue());
+                        } else if (choice == 2) {
+                            b.leftRemove(entry.getKey());
+                        } else if (choice == 3) {
+                            b.rightRemove(entry.getValue());
+                        } else if (choice == 4) {
+                            forward.remove(random.ints(random.nextInt(50, 100), ' ', 0xFFFF)
+                                    .collect(
+                                            StringBuilder::new,
+                                            StringBuilder::appendCodePoint,
+                                            StringBuilder::append
+                                    ).toString());
+                        } else if (choice == 5) {
+                            backward.remove(random.ints(random.nextInt(50, 100), ' ', 0xFFFF)
+                                    .collect(
+                                            StringBuilder::new,
+                                            StringBuilder::appendCodePoint,
+                                            StringBuilder::append
+                                    ).toString());
+                        } else if (choice == 6) {
+                            b.leftRemove(random.ints(random.nextInt(50, 100), ' ', 0xFFFF)
+                                    .collect(
+                                            StringBuilder::new,
+                                            StringBuilder::appendCodePoint,
+                                            StringBuilder::append
+                                    ).toString());
+                        } else {
+                            b.rightRemove(random.ints(random.nextInt(50, 100), ' ', 0xFFFF)
+                                    .collect(
+                                            StringBuilder::new,
+                                            StringBuilder::appendCodePoint,
+                                            StringBuilder::append
+                                    ).toString());
+                        }
+                        forward.check("forward 8##");
+                        backward.check("backward 8##");
+                    }
+                }
+        );
+    }
 }

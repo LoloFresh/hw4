@@ -43,6 +43,11 @@ public class MapChecker implements Map<String, String> {
         }
     }
 
+    public void check(final String message) {
+        assertEqualsOrdered(message);
+        invariantChecker.run();
+    }
+
     @Override
     public int size() {
         final int result = expected.size();

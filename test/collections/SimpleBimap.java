@@ -128,14 +128,29 @@ public class SimpleBimap implements Bimap {
                         if (contains(o)) {
                             @SuppressWarnings("unchecked")
                             final Entry<String, String> entry = (Entry<String, String>) o;
-                            left.remove(entry.getKey());
-                            right.remove(entry.getValue());
+                            leftRemove(entry.getKey());
+                            rightRemove(entry.getValue());
                             return true;
                         } else {
                             return false;
                         }
                     }
                 };
+            }
+
+            @Override
+            public boolean containsKey(final Object key) {
+                return left.containsKey(key);
+            }
+
+            @Override
+            public String get(final Object key) {
+                return left.get(key);
+            }
+
+            @Override
+            public String remove(final Object key) {
+                return SimpleBimap.this.leftRemove((String) key);
             }
         };
     }
@@ -165,7 +180,7 @@ public class SimpleBimap implements Bimap {
                             @Override
                             public void remove() {
                                 rightIter.remove();
-                                left.remove(lastRet.getValue());
+                                leftRemove(lastRet.getValue());
                             }
                         };
                     }
@@ -193,14 +208,29 @@ public class SimpleBimap implements Bimap {
                         if (contains(o)) {
                             @SuppressWarnings("unchecked")
                             final Entry<String, String> entry = (Entry<String, String>) o;
-                            right.remove(entry.getKey());
-                            left.remove(entry.getValue());
+                            rightRemove(entry.getKey());
+                            leftRemove(entry.getValue());
                             return true;
                         } else {
                             return false;
                         }
                     }
                 };
+            }
+
+            @Override
+            public boolean containsKey(final Object key) {
+                return right.containsKey(key);
+            }
+
+            @Override
+            public String get(final Object key) {
+                return right.get(key);
+            }
+
+            @Override
+            public String remove(final Object key) {
+                return SimpleBimap.this.rightRemove((String) key);
             }
         };
     }
