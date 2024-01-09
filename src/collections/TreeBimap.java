@@ -2,7 +2,7 @@ package collections;
 
 import java.util.*;
 
-public class TreeBimap implements Bimap {
+public class TreeBimap implements UpgradedBimap {
     private static final class Half {
         String key;
         Node left;
@@ -271,6 +271,51 @@ public class TreeBimap implements Bimap {
     }
 
     @Override
+    public BimapLeftIterator leftIterator() {
+        class LeftIter implements BimapLeftIterator {
+            private final LeftEntrySetIterator iter;
+
+            LeftIter(final LeftEntrySetIterator iter) {
+                this.iter = iter;
+            }
+
+            @Override
+            public BimapRightIterator flip() {
+                return new BimapRightIterator() {
+                    final LeftEntrySetIterator iterR = iter.copyOf();
+
+                    @Override
+                    public BimapLeftIterator flip() {
+                        return new LeftIter(iterR.copyOf());
+                    }
+
+                    @Override
+                    public boolean hasNext() {
+                        return iterR.hasNext();
+                    }
+
+                    @Override
+                    public String next() {
+                        return iterR.next().getValue();
+                    }
+                };
+            }
+
+            @Override
+            public boolean hasNext() {
+                return iter.hasNext();
+            }
+
+            @Override
+            public String next() {
+                return iter.next().getKey();
+            }
+        }
+
+        return new LeftIter(new LeftEntrySetIterator(rootParent));
+    }
+
+    @Override
     public void put(final String left, final String right) {
         if (rootParent.leftHalf.right == null) {
             assert rootParent.rightHalf.right == null;
@@ -390,6 +435,53 @@ public class TreeBimap implements Bimap {
         }
     }
 
+    private class LeftEntrySetIterator implements Iterator<Map.Entry<String, String>> {
+        private Node node;
+        private boolean removeValid = false;
+
+        LeftEntrySetIterator copyOf() {
+            return new LeftEntrySetIterator(node);
+        }
+
+        public LeftEntrySetIterator(final Node node) {
+            this.node = node;
+        }
+
+        @Override
+        public boolean hasNext() {
+            if (node.leftHalf.right != null) {
+                return true;
+            } else {
+                Node that = node;
+                while (that.leftHalf.parent != null && that == that.leftHalf.parent.leftHalf.right) {
+                    that = that.leftHalf.parent;
+                }
+                return that.leftHalf.parent != null;
+            }
+        }
+
+        @Override
+        public Map.Entry<String, String> next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            node = node.leftNext();
+            removeValid = true;
+            return new TreeBimap.Entry(node.leftHalf.key, node.rightHalf.key);
+        }
+
+        @Override
+        public void remove() {
+            if (!removeValid) {
+                throw new IllegalStateException();
+            }
+            final Node prev = node.leftPrev();
+            TreeBimap.this.remove(node);
+            removeValid = false;
+            node = prev;
+        }
+    }
+
     @Override
     public Map<String, String> left() {
         return new AbstractMap<>() {
@@ -398,44 +490,7 @@ public class TreeBimap implements Bimap {
                 return new AbstractSet<>() {
                     @Override
                     public Iterator<Entry<String, String>> iterator() {
-                        return new Iterator<>() {
-                            private Node node = rootParent;
-                            private boolean removeValid = false;
-
-                            @Override
-                            public boolean hasNext() {
-                                if (node.leftHalf.right != null) {
-                                    return true;
-                                } else {
-                                    Node that = node;
-                                    while (that.leftHalf.parent != null && that == that.leftHalf.parent.leftHalf.right) {
-                                        that = that.leftHalf.parent;
-                                    }
-                                    return that.leftHalf.parent != null;
-                                }
-                            }
-
-                            @Override
-                            public Entry<String, String> next() {
-                                if (!hasNext()) {
-                                    throw new NoSuchElementException();
-                                }
-                                node = node.leftNext();
-                                removeValid = true;
-                                return new TreeBimap.Entry(node.leftHalf.key, node.rightHalf.key);
-                            }
-
-                            @Override
-                            public void remove() {
-                                if (!removeValid) {
-                                    throw new IllegalStateException();
-                                }
-                                final Node prev = node.leftPrev();
-                                TreeBimap.this.remove(node);
-                                removeValid = false;
-                                node = prev;
-                            }
-                        };
+                        return new LeftEntrySetIterator(rootParent);
                     }
 
                     @Override
